@@ -13,9 +13,20 @@ from transformers import AutoModelForCausalLM, BitsAndBytesConfig, AutoTokenizer
 from transformers import logging, set_seed
 from datasets import load_dataset
 
+BOLD = "\033[1m"
+RED = BOLD + "\033[31m"
+GREEN = BOLD + "\033[32m"
+YELLOW = BOLD + "\033[33m"
+BLUE = BOLD + "\033[34m"
+MAGENTA = BOLD + "\033[35m"
+CYAN = BOLD + "\033[36m"
+WHITE = BOLD + "\033[37m"
+RESET = "\033[0m"
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default="../CodeLlama-13b-Instruct-hf")
+    parser.add_argument("--peft_model_path", type=str, default="./checkpoints/RQ1_3_cl_instruct/peft")
     parser.add_argument("--code", type=str, default=None, help="Rust function code text")
     parser.add_argument("--code_path", type=str, default=None, help="Path of a file containing Rust code")
 
@@ -62,13 +73,6 @@ def inference(eval_prompt):
         return result
 
 
-def list_to_csv_with_headers(list, filename):
-    with open(filename, 'w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(['code', 'generated', 'reference'])
-        csv_writer.writerows(list)
-
-
 def get_prompt(code, message):
     if message == None:
         full_prompt = f"""You are a advanced model trained for vulnerability detection. Your task is to examine real open-source code functions to determine if there are any vulnerabilities present, and to indentify the key statements that lead to vulnerabilities, and provide concise and intuitive analysis and explanations. Focus on the most critical parts of the functions that are most relevant to potential vulnerabilities.
@@ -104,7 +108,6 @@ if __name__ == "__main__":
         print("Please provide either a code file or code text.")
         sys.exit(1)
     set_seed(args.seed)
-    os.makedirs(args.result_path.rsplit("/", 1)[0], exist_ok=True)
     logging.set_verbosity_error()
     result_list = []
     reference_list = []
@@ -120,8 +123,7 @@ if __name__ == "__main__":
 
     from peft import PeftModel
 
-    peft_model_output_dir = args.output_dir + "/peft"
-    model = PeftModel.from_pretrained(model, peft_model_output_dir)
+    model = PeftModel.from_pretrained(model, args.peft_model_path)
 
     code = args.code
     if args.code is None:
@@ -129,4 +131,19 @@ if __name__ == "__main__":
             code = f.read()
     test_prompt = get_prompt(code, message=None)
     result = inference(test_prompt)
-    print(result)
+
+    label_match = re.search(r'\[label\]([\s\S]*?)\[detail\]', result)
+    detail_match = re.search(r'\[detail\]([\s\S]*)', result)
+    if not label_match or not detail_match:
+        print(result)
+    else:
+        label_content = label_match.group(1).strip()
+        detail_content = detail_match.group(1).strip()
+
+        label_content = label_content.replace("vulnerable", f"{RED}vulnerable{RESET}")
+        label_content = label_content.replace(f"non-{RED}vulnerable{RESET}", f"{GREEN}non-vulnerable{RESET}")
+
+        print(f"{YELLOW}[label]{RESET}")
+        print(label_content)
+        print(f"{YELLOW}[detail]{RESET}")
+        print(detail_content)

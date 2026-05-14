@@ -19,7 +19,7 @@ VulDetectoR is a tool designed to detect and explain vulnerabilities in Rust cod
 2. Install the required dependencies and download the pre-trained model.
 3. Run `vuldetector.py` to perform vulnerability detection and explanation generation.
 ```bash
-CUDA_VISIBLE_DEVICES=[GPU_ID] python vuldetector.py --code_path [CODE_PATH] --model_path [MODEL_PATH]
+python vuldetector.py --code_path [CODE_PATH] --model_path [MODEL_PATH]
 ```
 
 ## Dataset
@@ -43,11 +43,11 @@ The dataset is used for fine-tuning and testing the model's performance, and the
 ## Fine-tuning
 To fine-tune the model on the dataset, run the following command:
 ```bash
-CUDA_VISIBLE_DEVICES=[GPU_ID] python train_all.py --model_path [MODEL_PATH]
+python train_all.py --model_path [MODEL_PATH]
 ```
 
 To evaluate the model's performance on the test set, run:
 ```bash
-CUDA_VISIBLE_DEVICES=[GPU_ID] python eval_all.py --model_path [MODEL_PATH]
+python eval_all.py --model_path [MODEL_PATH]
 python accuracy.py
 ```
